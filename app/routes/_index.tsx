@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { json } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import { fetchWeatherData } from '../api-services/open-weather-service'
@@ -27,17 +28,79 @@ export async function loader() {
   // TODO: accept query params for location and units
   // TODO: look up location by postal code
 
-  const data = await fetchWeatherData({
-    lat: location.lat,
-    lon: location.lon,
-    units: units,
-  })
-  return json({ currentConditions: data })
+  try {
+    const data: any = await fetchWeatherData({
+      lat: location.lat,
+      lon: location.lon,
+      units: units,
+    })
+
+    // If OpenWeather returns an error, it often includes "message" or "cod"
+    if (!data || !Array.isArray(data.weather) || data.weather.length === 0) {
+      const details = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data)
+
+      return json(
+        {
+          currentConditions: null,
+          error: data?.message ?? 'Weather data missing from API response.',
+          debug: details,
+        },
+        { status: 502 }
+      )
+    }
+
+    return json({ currentConditions: data, error: null, debug: null })
+  } catch (e: any) {
+    return json(
+      {
+        currentConditions: null,
+        error: e?.message ?? 'Failed to fetch weather data.',
+        debug: null,
+      },
+      { status: 500 }
+    )
+  }
 }
 
 export default function CurrentConditions() {
-  const { currentConditions } = useLoaderData<typeof loader>()
-  const weather = currentConditions.weather[0]
+  const { currentConditions, error, debug } = useLoaderData<typeof loader>()
+
+  if (error) {
+    return (
+      <main style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif', lineHeight: '1.8' }}>
+        <h1>Remix Weather</h1>
+        <p style={{ color: 'crimson' }}>Error: {error}</p>
+
+        {debug ? (
+          <>
+            <h2 style={{ marginTop: '1rem' }}>Debug</h2>
+            <pre>{debug}</pre>
+          </>
+        ) : null}
+      </main>
+    )
+  }
+
+  if (!currentConditions) {
+    return (
+      <main style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif', lineHeight: '1.8' }}>
+        <h1>Remix Weather</h1>
+        <p>No weather data available.</p>
+      </main>
+    )
+  }
+
+  const weather = currentConditions.weather?.[0]
+
+  if (!weather) {
+    return (
+      <main style={{ padding: '1.5rem', fontFamily: 'system-ui, sans-serif', lineHeight: '1.8' }}>
+        <h1>Remix Weather</h1>
+        <p>Weather details unavailable.</p>
+      </main>
+    )
+  }
+
   return (
     <>
       <main
@@ -64,9 +127,7 @@ export default function CurrentConditions() {
           }}
         >
           <img src={getWeatherIconUrl(weather.icon)} alt="" />
-          <div style={{ fontSize: '2rem' }}>
-            {currentConditions.main.temp.toFixed(1)}°C
-          </div>
+          <div style={{ fontSize: '2rem' }}>{currentConditions.main.temp.toFixed(1)}°C</div>
         </div>
         <p
           style={{
@@ -85,7 +146,7 @@ export default function CurrentConditions() {
               day: 'numeric',
               hour: 'numeric',
               minute: '2-digit',
-            }).format(currentConditions.dt * 1000)}
+            }).format(new Date(currentConditions.dt * 1000))}
           </span>
         </p>
       </main>
