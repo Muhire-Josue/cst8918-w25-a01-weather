@@ -8,12 +8,10 @@ ENV NODE_ENV production
 # RUN apk -U add --update-cache openssl sqlite
 
 # Create user and set ownership and permissions as required
-RUN <<EOT 
-addgroup student && 
-adduser -D -H -g "student" -G student student && 
-mkdir /cst8918-a01 && 
-chown -R student:student /cst8918-a01
-EOT
+RUN addgroup -S student \
+ && adduser -S -D -H -G student student \
+ && mkdir -p /cst8918-a01 \
+ && chown -R student:student /cst8918-a01
 
 # Install all node_modules, including dev dependencies
 FROM base as deps
@@ -61,4 +59,4 @@ COPY --from=build /cst8918-a01/package.json /cst8918-a01/package.json
 
 RUN chown -R student:student /cst8918-a01
 USER student
-CMD [ "/bin/sh", "-c", "./node_modules/.bin/remix-serve ./build/index.js" ]
+CMD [ "/bin/sh", "-c", "./node_modules/.bin/remix-serve ./build/index.js --port $PORT" ]
