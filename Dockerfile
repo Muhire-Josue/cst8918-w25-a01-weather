@@ -57,6 +57,6 @@ COPY --from=build /cst8918-a01/build /cst8918-a01/build
 COPY --from=build /cst8918-a01/public /cst8918-a01/public
 COPY --from=build /cst8918-a01/package.json /cst8918-a01/package.json
 
-RUN chown -R student:student /cst8918-a01
-USER student
+#RUN chown -R student:student /cst8918-a01
+#USER student
 CMD [ "/bin/sh", "-c", "./node_modules/.bin/remix-serve ./build/index.js --port $PORT" ]

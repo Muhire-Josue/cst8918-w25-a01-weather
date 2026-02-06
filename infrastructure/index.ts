@@ -3,7 +3,9 @@ import * as resources from '@pulumi/azure-native/resources'
 import * as dockerBuild from '@pulumi/docker-build'
 import * as containerregistry from '@pulumi/azure-native/containerregistry'
 import * as containerinstance from '@pulumi/azure-native/containerinstance'
-import * as cache from '@pulumi/azure-native/cache'
+import * as cache from '@pulumi/azure-native/redis';
+
+
 
 // Import the configuration settings for the current stack.
 const config = new pulumi.Config()
@@ -146,7 +148,7 @@ const containerGroup = new containerinstance.ContainerGroup(
     ],
     ipAddress: {
       type: containerinstance.ContainerGroupIpAddressType.Public,
-      //dnsNameLabel: `${imageName}`,
+      dnsNameLabel: `${prefixName}-appdamismanfouo`,
       ports: [
         {
           port: publicPort,
